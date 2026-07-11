@@ -1,4 +1,4 @@
-var CACHE_NAME = "study-tracker-v2";
+var CACHE_NAME = "study-tracker-v3";
 var URLS = [
   "./",
   "./index.html",
@@ -30,15 +30,18 @@ self.addEventListener("activate", function (event) {
   self.clients.claim();
 });
 
+/* Network-first: always tries to fetch the latest version when online,
+   only falls back to the cached copy when there's no connection.
+   (The old version cached-first, which is why edits weren't showing up.) */
 self.addEventListener("fetch", function (event) {
   if (event.request.method !== "GET") return;
   event.respondWith(
-    caches.match(event.request).then(function (cached) {
-      return cached || fetch(event.request).then(function (response) {
-        var copy = response.clone();
-        caches.open(CACHE_NAME).then(function (cache) { cache.put(event.request, copy); });
-        return response;
-      }).catch(function () { return cached; });
+    fetch(event.request).then(function (response) {
+      var copy = response.clone();
+      caches.open(CACHE_NAME).then(function (cache) { cache.put(event.request, copy); });
+      return response;
+    }).catch(function () {
+      return caches.match(event.request);
     })
   );
 });
