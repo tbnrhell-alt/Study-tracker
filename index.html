@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Study Phase Tracker</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="theme-color" content="#000000">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="StudyTracker">
+<meta name="mobile-web-app-capable" content="yes">
+<style>
+:root{
+  --bg1:#000000; --bg2:#000000; --card:rgba(255,255,255,0.045); --card-b:rgba(255,45,149,0.22);
+  --orange:#ff2d95; --orange-d:#d81877; --teal:#ff8fc7; --green:#4caf50; --red:#e05656;
+  --text:#f5f2f4; --muted:#a89aa3; --safe-b: env(safe-area-inset-bottom, 0px); --safe-t: env(safe-area-inset-top, 0px);
+}
+*{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+html,body{margin:0;padding:0;}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  background:linear-gradient(160deg,var(--bg1),var(--bg2) 60%);
+  color:var(--text); min-height:100vh; padding-bottom:calc(84px + var(--safe-b));
+  -webkit-font-smoothing:antialiased;
+}
+#app{max-width:640px;margin:0 auto;padding:16px 16px 8px;padding-top:calc(16px + var(--safe-t));}
+h1,h2,h3{margin:0;}
+button{font-family:inherit;}
+a{color:var(--teal);}
+
+/* ===== Header ===== */
+.app-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.app-header .brand{display:flex;align-items:center;gap:10px;}
+.app-header .brand-icon{width:34px;height:34px;border-radius:9px;background:radial-gradient(circle at 35% 30%,var(--orange),var(--orange-d));display:flex;align-items:center;justify-content:center;font-size:18px;}
+.app-header h1{font-size:1.15rem;font-weight:700;letter-spacing:-.01em;}
+.app-header .sub{font-size:.72rem;color:var(--muted);}
+.icon-btn{background:var(--card);border:1px solid var(--card-b);color:var(--text);width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1rem;cursor:pointer;}
+
+/* ===== Phase card ===== */
+.phase-card{background:linear-gradient(155deg,rgba(255,45,149,.14),rgba(255,45,149,.04));border:1px solid rgba(255,45,149,.35);border-radius:18px;padding:22px 18px;text-align:center;margin-bottom:16px;}
+.phase-name{color:var(--orange);font-weight:700;font-size:1.02rem;margin-bottom:2px;}
+.phase-range{color:var(--muted);font-size:.75rem;margin-bottom:14px;}
+.ring-wrap{width:150px;height:150px;margin:0 auto 14px;border-radius:50%;background:conic-gradient(var(--teal) var(--pct,0%), rgba(255,143,199,.12) 0);display:flex;align-items:center;justify-content:center;}
+.ring-inner{width:118px;height:118px;border-radius:50%;background:#000000ee;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+.ring-num{font-size:2.3rem;font-weight:800;color:var(--teal);line-height:1;}
+.ring-label{font-size:.68rem;color:var(--muted);margin-top:2px;letter-spacing:.03em;}
+.phase-nav{display:flex;justify-content:center;gap:8px;margin-top:2px;}
+.phase-nav button{background:none;border:none;color:var(--muted);font-size:.75rem;cursor:pointer;padding:4px 8px;}
+.phase-nav button.on{color:var(--orange);font-weight:700;}
+
+/* ===== Streak row ===== */
+.streak-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;}
+.streak-box{background:var(--card);border:1px solid rgba(255,143,199,.28);border-radius:14px;padding:12px 14px;}
+.streak-box .n{font-size:1.5rem;font-weight:800;color:var(--teal);}
+.streak-box .l{font-size:.7rem;color:var(--muted);margin-top:2px;}
+.streak-box .best{font-size:.65rem;color:#8f7580;margin-top:1px;}
+
+/* ===== Tabs ===== */
+.tabs{display:flex;gap:6px;overflow-x:auto;margin-bottom:14px;scrollbar-width:none;}
+.tabs::-webkit-scrollbar{display:none;}
+.tab{flex:none;padding:8px 14px;background:var(--card);border:1px solid var(--card-b);color:var(--muted);border-radius:20px;font-size:.82rem;cursor:pointer;white-space:nowrap;}
+.tab.on{background:var(--orange);border-color:var(--orange);color:#fff;font-weight:600;}
+
+/* ===== Cards / lists ===== */
+.section-title{font-size:.95rem;font-weight:700;color:var(--orange);margin:18px 0 10px;}
+.section-title:first-child{margin-top:0;}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;}
+.card{background:var(--card);border:1px solid var(--card-b);border-radius:14px;padding:14px 16px;}
+.subj-card .subj-name{font-weight:700;color:var(--text);font-size:.95rem;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;}
+.subj-card .subj-total{color:var(--teal);font-weight:800;}
+.subj-mini-row{display:flex;justify-content:space-between;font-size:.78rem;color:var(--muted);padding:3px 0;border-top:1px solid rgba(255,255,255,.05);}
+.subj-mini-row span:last-child{color:#c9bec5;font-weight:600;}
+.empty-note{color:var(--muted);font-size:.85rem;padding:14px 4px;text-align:center;}
+
+.chapter-item{background:var(--card);border:1px solid var(--card-b);border-radius:12px;padding:12px 14px;margin-bottom:9px;}
+.chapter-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;}
+.chapter-name{font-weight:600;font-size:.92rem;}
+.chapter-meta{font-size:.72rem;color:var(--muted);margin-top:3px;}
+.badge{font-size:.68rem;padding:3px 9px;border-radius:20px;white-space:nowrap;}
+.badge.inprog{background:rgba(255,45,149,.18);color:var(--orange);}
+.badge.done{background:rgba(76,175,80,.18);color:var(--green);}
+.chapter-actions{display:flex;gap:8px;margin-top:10px;}
+
+.btn{border:none;border-radius:10px;font-weight:600;cursor:pointer;padding:9px 14px;font-size:.85rem;}
+.btn-primary{background:var(--orange);color:#fff;}
+.btn-primary:active{background:var(--orange-d);}
+.btn-full{width:100%;padding:14px;font-size:1rem;border-radius:12px;}
+.btn-ghost{background:rgba(255,143,199,.14);color:var(--teal);border:1px solid rgba(255,143,199,.3);}
+.btn-ghost-orange{background:rgba(255,45,149,.12);color:var(--orange);border:1px solid rgba(255,45,149,.3);}
+.btn-danger{background:rgba(224,86,86,.14);color:var(--red);border:1px solid rgba(224,86,86,.3);}
+.btn-sm{padding:6px 11px;font-size:.75rem;border-radius:8px;}
+
+/* ===== Subject sub-tabs ===== */
+.subject-pills{display:flex;gap:6px;overflow-x:auto;margin-bottom:12px;}
+.pill{flex:none;padding:7px 13px;border-radius:20px;background:var(--card);border:1px solid var(--card-b);color:var(--muted);font-size:.8rem;cursor:pointer;}
+.pill.on{background:var(--teal);border-color:var(--teal);color:#4a0a2c;font-weight:700;}
+
+/* ===== FAB ===== */
+.fab{position:fixed;right:18px;bottom:calc(78px + var(--safe-b));width:58px;height:58px;border-radius:50%;background:linear-gradient(155deg,var(--orange),var(--orange-d));border:none;color:#fff;font-size:1.7rem;box-shadow:0 8px 22px rgba(255,45,149,.45);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:40;}
+
+/* ===== Bottom nav ===== */
+.bottom-nav{position:fixed;left:0;right:0;bottom:0;background:rgba(0,0,0,.92);backdrop-filter:blur(10px);border-top:1px solid rgba(255,45,149,.18);display:flex;padding-bottom:var(--safe-b);z-index:35;}
+.nav-btn{flex:1;background:none;border:none;color:var(--muted);font-size:.66rem;padding:10px 2px 8px;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;}
+.nav-btn .ic{font-size:1.2rem;}
+.nav-btn.on{color:var(--orange);}
+
+/* ===== Modal ===== */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.78);display:flex;align-items:flex-end;justify-content:center;z-index:100;}
+@media(min-width:640px){.overlay{align-items:center;}}
+.modal{background:#0c0609;border:1px solid rgba(255,45,149,.3);border-radius:20px 20px 0 0;padding:20px 18px calc(20px + var(--safe-b));max-width:520px;width:100%;max-height:88vh;overflow-y:auto;}
+@media(min-width:640px){.modal{border-radius:20px;max-height:80vh;}}
+.modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;}
+.modal-head h2{font-size:1.1rem;}
+.modal-close{background:var(--card);border:none;color:var(--muted);width:32px;height:32px;border-radius:9px;font-size:1rem;cursor:pointer;}
+
+.field{margin-bottom:14px;}
+.field label{display:block;font-size:.8rem;font-weight:600;color:#d8cdd3;margin-bottom:6px;}
+.field .hint{font-size:.68rem;color:var(--muted);margin-top:4px;}
+input,select,textarea{
+  width:100%;padding:11px 12px;background:rgba(255,255,255,.06);border:1px solid rgba(255,45,149,.28);
+  border-radius:10px;color:var(--text);font-size:.92rem;font-family:inherit;
+}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--orange);background:rgba(255,45,149,.08);}
+textarea{resize:vertical;min-height:60px;}
+select{-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23a89aa3'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;padding-right:32px;}
+
+.qrow{display:grid;grid-template-columns:1.15fr 1.15fr .75fr auto;gap:6px;margin-bottom:8px;align-items:center;}
+.qrow input{padding:9px 8px;font-size:.82rem;}
+.qrow .qremove{background:rgba(224,86,86,.15);color:var(--red);border:none;border-radius:8px;width:34px;height:34px;font-size:.9rem;cursor:pointer;}
+.check-row{display:flex;align-items:center;gap:9px;padding:10px 2px;}
+.check-row input[type=checkbox]{width:19px;height:19px;flex:none;accent-color:var(--orange);}
+.check-row label{margin:0;font-size:.85rem;color:var(--text);}
+
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(96px + var(--safe-b));background:#1f3a2f;color:#8ee0a8;border:1px solid rgba(76,175,80,.4);padding:10px 18px;border-radius:30px;font-size:.82rem;z-index:200;box-shadow:0 6px 18px rgba(0,0,0,.35);}
+
+.info-line{font-size:.72rem;color:var(--muted);margin-top:6px;line-height:1.5;}
+.stat-line{display:flex;justify-content:space-between;font-size:.85rem;padding:7px 0;border-top:1px solid rgba(255,255,255,.06);}
+.stat-line span:last-child{font-weight:700;color:var(--teal);}
+.bar-row{margin:9px 0;}
+.bar-row .bl{display:flex;justify-content:space-between;font-size:.75rem;color:var(--muted);margin-bottom:4px;}
+.bar-track{height:8px;background:rgba(255,255,255,.06);border-radius:5px;overflow:hidden;}
+.bar-fill{height:100%;background:linear-gradient(90deg,var(--orange),var(--teal));border-radius:5px;}
+
+.setup-row{display:flex;gap:10px;align-items:center;margin-bottom:10px;}
+.setup-row input{flex:1;}
+.setup-row .num{width:44px;flex:none;text-align:center;color:var(--muted);font-size:.85rem;font-weight:700;}
+
+@media(min-width:640px){
+  #app{max-width:760px;}
+  .ring-wrap{width:170px;height:170px;}
+  .ring-inner{width:134px;height:134px;}
+  body{font-size:16px;}
+}
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+"use strict";
+
+/* ===================== CONSTANTS ===================== */
+var QTYPE_PRESETS = ["MCQ","Short Answer","Numerical","Long Answer"];
+var STORAGE_KEY = "studyTrackerStateV2";
+
+/* ============================================================
+   CLOUD SYNC CONFIGURATION
+   Paste your Firebase config values here (see FIREBASE-SYNC-GUIDE.md).
+   Leave exactly as-is and the app just runs locally, no sync, no errors.
+   ============================================================ */
+var FIREBASE_CONFIG = {
+  apiKey: "AIzaSyBWqXnpON4ZDZROnwus0VHVydBtaUvMdJs",
+  authDomain: "study-tracker-61e76.firebaseapp.com",
+  projectId: "study-tracker-61e76",
+  storageBucket: "study-tracker-61e76.firebasestorage.app",
+  messagingSenderId: "372310356581",
+  appId: "1:372310356581:web:875150889e1ffedd538c8c"
+};
+window.FIREBASE_CONFIG = FIREBASE_CONFIG;
+/* ============================================================ */
+
+/* ===================== STATE ===================== */
+var state = loadState();
+var ui = { tab:"home", logOpen:false, chapterOpen:false, chapterSubject:null, subjPill:null, phaseView:null, settingsOpen:false };
+
+function defaultState(){
+  return {
+    version: 2,
+    setup: { startDate: todayStr(), phaseLengthDays: 60, totalPhases: 5 },
+    subjects: ["Subject 1","Subject 2","Subject 3","Subject 4"],
+    chapters: [],
+    logs: [],
+    streaks: { dailyCurrent:0, dailyLongest:0, lastLogDate:null, chapterCurrent:0, chapterLongest:0 },
+    lastBackup: null
+  };
+}
+function loadState(){
+  try{
+    var raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return defaultState();
+    var parsed = JSON.parse(raw);
+    if(!parsed || parsed.version !== 2 || !parsed.setup || !Array.isArray(parsed.subjects)) return defaultState();
+    return parsed;
+  }catch(e){ return defaultState(); }
+}
+function saveState(){
+  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }catch(e){ console.error("save failed", e); }
+  if(window.__pushToCloud){
+    var json = JSON.stringify(state);
+    window.__lastPushedJSON = json;
+    window.__pushToCloud(state);
+  }
+}
+
+/* ===================== CLOUD SYNC BRIDGE ===================== */
+/* Hooks the module script below calls into / reads from. Safe no-ops until cloud sync is configured. */
+window.__lastPushedJSON = null;
+window.getLocalState = function(){ return state; };
+window.applyCloudState = function(newState){
+  if(!newState) return;
+  var incoming = JSON.stringify(newState);
+  if(incoming === window.__lastPushedJSON) return; // this is just an echo of our own write
+  state = newState;
+  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }catch(e){}
+  render();
+};
+
+/* ===================== DATE HELPERS ===================== */
+function pad(n){ return n<10?"0"+n:""+n; }
+function toISO(d){ return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate()); }
+function todayStr(){ return toISO(new Date()); }
+function parseISO(s){ var p=s.split("-"); return new Date(parseInt(p[0]),parseInt(p[1])-1,parseInt(p[2])); }
+function addDays(d,n){ var r=new Date(d); r.setDate(r.getDate()+n); return r; }
+function addDaysStr(s,n){ return toISO(addDays(parseISO(s),n)); }
+function yesterdayOf(s){ return addDaysStr(s,-1); }
+function fmtShort(s){ var d=parseISO(s); var months=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]; return d.getDate()+" "+months[d.getMonth()]; }
+function daysAgoLabel(s){
+  if(!s) return "never";
+  var diff = Math.round((parseISO(todayStr()) - parseISO(s)) / 86400000);
+  if(diff===0) return "today";
+  if(diff===1) return "yesterday";
+  return diff+" days ago";
+}
+
+/* ===================== PHASE LOGIC ===================== */
+function getPhases(){
+  var phases=[]; var start=parseISO(state.setup.startDate);
+  for(var i=0;i<state.setup.totalPhases;i++){
+    var s=addDays(start,i*state.setup.phaseLengthDays);
+    var e=addDays(start,(i+1)*state.setup.phaseLengthDays-1);
+    phases.push({index:i,name:"Phase "+(i+1),start:toISO(s),end:toISO(e)});
+  }
+  return phases;
+}
+function getCurrentPhaseIndex(){
+  var t=todayStr(); var phases=getPhases();
+  for(var i=0;i<phases.length;i++){ if(t>=phases[i].start && t<=phases[i].end) return i; }
+  if(t < phases[0].start) return 0;
+  return phases[phases.length-1].index;
+}
+function getDaysRemaining(phase){
+  var diff = Math.ceil((parseISO(phase.end) - parseISO(todayStr())) / 86400000) + 1;
+  return Math.max(0, Math.min(diff, state.setup.phaseLengthDays));
+}
+
+/* ===================== STREAK LOGIC ===================== */
+function effectiveDailyStreak(){
+  var s=state.streaks;
+  if(!s.lastLogDate) return 0;
+  var t=todayStr();
+  if(s.lastLogDate===t || s.lastLogDate===yesterdayOf(t)) return s.dailyCurrent;
+  return 0;
+}
+function effectiveChapterStreak(){
+  return effectiveDailyStreak()===0 && state.streaks.lastLogDate && state.streaks.lastLogDate!==todayStr() && state.streaks.lastLogDate!==yesterdayOf(todayStr()) ? 0 : state.streaks.chapterCurrent;
+}
+function registerLogForStreaks(dateStr){
+  var s=state.streaks;
+  if(s.lastLogDate === dateStr) return; // already logged today, no daily-streak change
+  if(s.lastLogDate === yesterdayOf(dateStr)){
+    s.dailyCurrent += 1;
+  } else {
+    s.dailyCurrent = 1;
+    s.chapterCurrent = 0; // gap broke the streak lineage
+  }
+  s.dailyLongest = Math.max(s.dailyLongest, s.dailyCurrent);
+  s.lastLogDate = dateStr;
+}
+function registerChapterCompleted(){
+  state.streaks.chapterCurrent += 1;
+  state.streaks.chapterLongest = Math.max(state.streaks.chapterLongest, state.streaks.chapterCurrent);
+}
+
+/* ===================== DATA HELPERS ===================== */
+function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
+function chaptersFor(subject, phaseIndex){
+  return state.chapters.filter(function(c){ return c.subject===subject && c.phaseIndex===phaseIndex; });
+}
+function chapterById(id){ return state.chapters.filter(function(c){return c.id===id;})[0]; }
+function logsForChapter(id){ return state.logs.filter(function(l){return l.chapterId===id;}); }
+function daysSpentOnChapter(id){
+  var dates = {}; logsForChapter(id).forEach(function(l){ dates[l.date]=1; });
+  return Object.keys(dates).length;
+}
+function minutesForChapter(id){ return logsForChapter(id).reduce(function(a,l){return a+(l.minutes||0);},0); }
+function questionsForChapter(id){ return logsForChapter(id).reduce(function(a,l){return a+(l.questions||[]).reduce(function(b,q){return b+(q.count||0);},0);},0); }
+
+function phaseStats(phaseIndex){
+  var phases=getPhases(); var phase=phases[phaseIndex];
+  var logs = state.logs.filter(function(l){ return l.date>=phase.start && l.date<=phase.end; });
+  var out = {};
+  state.subjects.forEach(function(s){ out[s]={total:0, byType:{}, chaptersDone:0, minutes:0}; });
+  logs.forEach(function(l){
+    if(!out[l.subject]) return;
+    out[l.subject].minutes += (l.minutes||0);
+    (l.questions||[]).forEach(function(q){
+      out[l.subject].total += (q.count||0);
+      out[l.subject].byType[q.type] = (out[l.subject].byType[q.type]||0) + (q.count||0);
+    });
+  });
+  state.subjects.forEach(function(s){
+    out[s].chaptersDone = state.chapters.filter(function(c){return c.subject===s && c.phaseIndex===phaseIndex && c.status==="completed";}).length;
+  });
+  return out;
+}
+function allSources(){
+  var set={};
+  state.logs.forEach(function(l){ (l.questions||[]).forEach(function(q){ if(q.source) set[q.source]=1; }); });
+  return Object.keys(set);
+}
+
+/* ===================== RENDER SHELL ===================== */
+function render(){
+  var phases=getPhases(); var curIdx=getCurrentPhaseIndex();
+  var viewIdx = ui.phaseView===null ? curIdx : ui.phaseView;
+  var phase=phases[viewIdx];
+  var daysLeft=getDaysRemaining(phase);
+  var pct = Math.round(((state.setup.phaseLengthDays-daysLeft)/state.setup.phaseLengthDays)*100);
+  var stats = phaseStats(viewIdx);
+
+  var html = "";
+  html += headerHTML();
+  html += phaseCardHTML(phase, daysLeft, pct, viewIdx===curIdx);
+  html += streakRowHTML();
+  html += tabsHTML();
+
+  if(ui.tab==="home") html += homeTabHTML(stats);
+  else if(ui.tab==="chapters") html += chaptersTabHTML(viewIdx);
+  else if(ui.tab==="phases") html += phasesTabHTML();
+  else if(ui.tab==="more") html += moreTabHTML();
+
+  html += '<button class="fab" data-action="open-log" aria-label="Log study">+</button>';
+  html += bottomNavHTML();
+
+  if(ui.logOpen) html += logModalHTML();
+  if(ui.chapterOpen) html += chapterModalHTML();
+
+  document.getElementById("app").innerHTML = html;
+  if(ui.logOpen) initLogModal();
+  if(window.__toastMsg){ showToastDOM(window.__toastMsg); window.__toastMsg=null; }
+}
+
+function headerHTML(){
+  return '<div class="app-header">' +
+    '<div class="brand"><div class="brand-icon">📚</div><div><h1>Study Tracker</h1><div class="sub">5 phases · 60 days each</div></div></div>' +
+    '<button class="icon-btn" data-action="goto-more">⚙️</button>' +
+  '</div>';
+}
+
+function phaseCardHTML(phase, daysLeft, pct, isCurrent){
+  var phases=getPhases();
+  var idx = phase.index;
+  var navBtns = phases.map(function(p){
+    return '<button class="'+(p.index===idx?"on":"")+'" data-action="view-phase" data-idx="'+p.index+'">P'+(p.index+1)+'</button>';
+  }).join("");
+  return '<div class="phase-card">' +
+    '<div class="phase-name">'+phase.name+(isCurrent?" · Current":"")+'</div>' +
+    '<div class="phase-range">'+fmtShort(phase.start)+' – '+fmtShort(phase.end)+'</div>' +
+    '<div class="ring-wrap" style="--pct:'+pct+'%"><div class="ring-inner"><div class="ring-num">'+daysLeft+'</div><div class="ring-label">DAYS LEFT</div></div></div>' +
+    '<div class="phase-nav">'+navBtns+'</div>' +
+  '</div>';
+}
+
+function streakRowHTML(){
+  var d=effectiveDailyStreak(), c=effectiveChapterStreak();
+  return '<div class="streak-row">' +
+    '<div class="streak-box"><div class="n">🔥 '+d+'</div><div class="l">Daily streak</div><div class="best">best '+state.streaks.dailyLongest+' · last log '+daysAgoLabel(state.streaks.lastLogDate)+'</div></div>' +
+    '<div class="streak-box"><div class="n">📈 '+c+'</div><div class="l">Chapter streak</div><div class="best">best '+state.streaks.chapterLongest+' · resets on missed days</div></div>' +
+  '</div>';
+}
+
+function tabsHTML(){
+  var tabs=[["home","🏠 Home"],["chapters","📖 Chapters"],["phases","🎯 Phases"],["more","☁️ More"]];
+  return '<div class="tabs">'+tabs.map(function(t){
+    return '<button class="tab '+(ui.tab===t[0]?"on":"")+'" data-action="set-tab" data-tab="'+t[0]+'">'+t[1]+'</button>';
+  }).join("")+'</div>';
+}
+
+function bottomNavHTML(){
+  var items=[["home","🏠","Home"],["chapters","📖","Chapters"],["phases","🎯","Phases"],["more","☰","More"]];
+  return '<div class="bottom-nav">'+items.map(function(it){
+    return '<button class="nav-btn '+(ui.tab===it[0]?"on":"")+'" data-action="set-tab" data-tab="'+it[0]+'"><span class="ic">'+it[1]+'</span>'+it[2]+'</button>';
+  }).join("")+'</div>';
+}
+
+/* ===================== HOME TAB ===================== */
+function homeTabHTML(stats){
+  var html = '<div class="section-title">Questions this phase</div>';
+  html += '<div class="grid2">';
+  state.subjects.forEach(function(s){
+    var st=stats[s];
+    var typeRows="";
+    var types=Object.keys(st.byType);
+    if(types.length===0){ typeRows='<div class="subj-mini-row"><span>No entries yet</span><span></span></div>'; }
+    else{ types.forEach(function(t){ typeRows+='<div class="subj-mini-row"><span>'+esc(t)+'</span><span>'+st.byType[t]+'</span></div>'; }); }
+    html += '<div class="card subj-card"><div class="subj-name"><span>'+esc(s)+'</span><span class="subj-total">'+st.total+'</span></div>'+typeRows+
+      '<div class="subj-mini-row"><span>Time logged</span><span>'+fmtMinutes(st.minutes)+'</span></div>' +
+      '<div class="subj-mini-row"><span>Chapters done</span><span>'+st.chaptersDone+'</span></div>' +
+    '</div>';
+  });
+  html += '</div>';
+  html += '<button class="btn btn-primary btn-full" style="margin-top:16px" data-action="open-log">＋ Log Today\'s Study</button>';
+  return html;
+}
+function fmtMinutes(m){ if(!m) return "0m"; var h=Math.floor(m/60), mm=m%60; return (h>0?h+"h ":"")+mm+"m"; }
+
+/* ===================== CHAPTERS TAB ===================== */
+function chaptersTabHTML(phaseIdx){
+  if(ui.subjPill===null) ui.subjPill = state.subjects[0];
+  var pills = state.subjects.map(function(s){
+    return '<button class="pill '+(ui.subjPill===s?"on":"")+'" data-action="set-subj-pill" data-subj="'+esc(s)+'">'+esc(s)+'</button>';
+  }).join("");
+  var chs = chaptersFor(ui.subjPill, phaseIdx);
+  var list = "";
+  if(chs.length===0){
+    list = '<div class="empty-note">No chapters yet for '+esc(ui.subjPill)+' in this phase.<br>Spin your wheel, then add the chapter below.</div>';
+  } else {
+    chs.slice().reverse().forEach(function(c){
+      var days=daysSpentOnChapter(c.id), mins=minutesForChapter(c.id), qs=questionsForChapter(c.id);
+      list += '<div class="chapter-item">' +
+        '<div class="chapter-top"><div><div class="chapter-name">'+esc(c.name)+'</div>' +
+        '<div class="chapter-meta">'+days+' day'+(days===1?"":"s")+' · '+qs+' questions · '+fmtMinutes(mins)+'</div></div>' +
+        '<span class="badge '+(c.status==="completed"?"done":"inprog")+'">'+(c.status==="completed"?"✓ Done":"In Progress")+'</span></div>' +
+        (c.status!=="completed" ? '<div class="chapter-actions"><button class="btn btn-ghost btn-sm" data-action="complete-chapter" data-id="'+c.id+'">✓ Mark Complete</button></div>' : '') +
+      '</div>';
+    });
+  }
+  var canCopy = chs.length===0 && phaseIdx>0 && chaptersFor(ui.subjPill, phaseIdx-1).length>0;
+  return '<div class="subject-pills">'+pills+'</div>' +
+    list +
+    '<div style="display:flex;gap:10px;margin-top:12px;flex-wrap:wrap">' +
+    '<button class="btn btn-ghost-orange" data-action="open-chapter-modal" data-subj="'+esc(ui.subjPill)+'">＋ Add Chapter</button>' +
+    (canCopy ? '<button class="btn btn-ghost" data-action="copy-prev-chapters" data-subj="'+esc(ui.subjPill)+'" data-phase="'+phaseIdx+'">⤵ Copy chapters from Phase '+phaseIdx+' (revision)</button>' : '') +
+    '</div>';
+}
+
+/* ===================== PHASES TAB ===================== */
+function phasesTabHTML(){
+  var phases=getPhases(); var curIdx=getCurrentPhaseIndex();
+  var html = '<div class="section-title">All 5 phases</div>';
+  phases.forEach(function(p){
+    var stats=phaseStats(p.index);
+    var grand=0; state.subjects.forEach(function(s){grand+=stats[s].total;});
+    var chDone=0; state.subjects.forEach(function(s){chDone+=stats[s].chaptersDone;});
+    html += '<div class="card" style="margin-bottom:12px">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center">' +
+      '<div><b>'+p.name+'</b>'+(p.index===curIdx?' <span style="color:var(--orange);font-size:.72rem">· current</span>':'')+
+      '<div class="chapter-meta">'+fmtShort(p.start)+' – '+fmtShort(p.end)+'</div></div>' +
+      '<button class="btn btn-ghost btn-sm" data-action="view-phase-tab" data-idx="'+p.index+'">View</button></div>' +
+      '<div class="stat-line"><span>Total questions</span><span>'+grand+'</span></div>' +
+      '<div class="stat-line"><span>Chapters completed</span><span>'+chDone+'</span></div>' +
+    '</div>';
+  });
+  return html;
+}
+
+/* ===================== MORE TAB ===================== */
+function moreTabHTML(){
+  var html = '<div class="section-title">Subjects</div><div class="card">';
+  state.subjects.forEach(function(s,i){
+    html += '<div class="field"><label>Subject '+(i+1)+'</label><input type="text" id="subj-input-'+i+'" value="'+esc(s)+'"></div>';
+  });
+  html += '<button class="btn btn-primary btn-full" data-action="save-subjects">Save Subject Names</button></div>';
+
+  html += '<div class="section-title">Phase Setup</div><div class="card">';
+  html += '<div class="field"><label>Phase 1 start date</label><input type="date" id="setup-start" value="'+state.setup.startDate+'"></div>';
+  html += '<div class="field"><label>Days per phase</label><input type="number" id="setup-len" value="'+state.setup.phaseLengthDays+'" min="7"></div>';
+  html += '<button class="btn btn-primary btn-full" data-action="save-setup">Save Phase Setup</button>';
+  html += '<div class="info-line">Safe to change anytime — existing chapters keep their phase, this only affects the countdown and which phase new chapters default to.</div></div>';
+
+  html += '<div class="section-title">Cloud Sync</div><div class="card">';
+  var cs = window.__cloudStatus || {configured:false};
+  if(!cs.configured){
+    html += '<div class="info-line">Not set up yet — the app is in local-only mode. Follow FIREBASE-SYNC-GUIDE.md to enable automatic sign-in-and-sync across your two devices.</div>';
+  } else if(!cs.signedIn){
+    html += '<div class="info-line" style="margin-bottom:10px">Sign in to automatically sync this device with your other one.</div>';
+    html += '<button class="btn btn-primary btn-full" data-action="cloud-sign-in">Sign in with Google</button>';
+  } else {
+    html += '<div class="stat-line"><span>Signed in as</span><span style="color:var(--teal)">'+esc(cs.email)+'</span></div>';
+    html += '<div class="info-line" style="margin:6px 0 10px">✓ Syncing automatically in the background.</div>';
+    html += '<button class="btn btn-ghost btn-full" data-action="cloud-sign-out">Sign out</button>';
+  }
+  if(cs.error){ html += '<div class="info-line" style="color:var(--red);margin-top:8px">Sync issue: '+esc(cs.error)+'</div>'; }
+  html += '</div>';
+
+  html += '<div class="section-title">Backup &amp; Sync</div><div class="card">';
+  html += '<div class="info-line" style="margin-bottom:10px">This app saves everything on this device only — there\'s no automatic account-based sync (that would need a hosted server + Google sign-in, which isn\'t part of a self-contained file). To use it on both your devices: export a backup here, save it to Google Drive from the share sheet, then import it on the other device.</div>';
+  html += '<div class="stat-line"><span>Last backup</span><span>'+daysAgoLabel(state.lastBackup)+'</span></div>';
+  html += '<div style="display:flex;gap:10px;margin-top:12px;flex-wrap:wrap">';
+  html += '<button class="btn btn-ghost" data-action="export-data">📤 Export / Share Backup</button>';
+  html += '<label class="btn btn-ghost-orange" style="display:inline-flex;align-items:center;cursor:pointer">📥 Import Backup<input type="file" accept=".json,application/json" id="import-file" style="display:none"></label>';
+  html += '</div></div>';
+
+  html += '<div class="section-title">Install as an App</div><div class="card">';
+  html += '<div class="info-line">If this page is hosted online (not opened as a raw file), you can install it: on Android Chrome, tap the ⋮ menu → "Install app" or "Add to Home screen". See the SETUP-GUIDE for hosting + APK steps.</div></div>';
+
+  html += '<div class="section-title">Danger Zone</div><div class="card">';
+  html += '<button class="btn btn-danger btn-full" data-action="reset-data">🗑 Erase All Data</button></div>';
+  return html;
+}
+
+/* ===================== LOG MODAL ===================== */
+function logModalHTML(){
+  var subjOptions = state.subjects.map(function(s){return '<option value="'+esc(s)+'">'+esc(s)+'</option>';}).join("");
+  var typeList = QTYPE_PRESETS.map(function(t){return '<option value="'+esc(t)+'">';}).join("");
+  var srcList = allSources().map(function(s){return '<option value="'+esc(s)+'">';}).join("");
+  return '<div class="overlay" data-action="close-log-bg">' +
+    '<div class="modal" onclick="event.stopPropagation()">' +
+    '<div class="modal-head"><h2>Log Today\'s Study</h2><button class="modal-close" data-action="close-log">✕</button></div>' +
+    '<div class="field"><label>Subject</label><select id="log-subject">'+subjOptions+'</select></div>' +
+    '<div class="field"><label>Chapter</label><select id="log-chapter"></select>' +
+      '<div id="log-new-chapter-wrap" style="display:none;margin-top:8px"><input type="text" id="log-new-chapter" placeholder="Chapter name (from your spin)"></div></div>' +
+    '<div class="field"><label>Questions done</label><div id="qrows"></div>' +
+      '<button type="button" class="btn btn-ghost btn-sm" data-action="add-qrow">＋ Add row</button>' +
+      '<div class="hint">Type and source are free text — start typing to see your previous entries.</div></div>' +
+    '<div class="field"><label>Time spent (minutes)</label><input type="number" id="log-minutes" inputmode="numeric" placeholder="e.g. 60" min="0"></div>' +
+    '<div class="field"><label>Notes (optional)</label><textarea id="log-notes" placeholder="Reflections, difficulty, anything worth remembering..."></textarea></div>' +
+    '<div class="check-row"><input type="checkbox" id="log-complete"><label for="log-complete">✓ This completes the chapter</label></div>' +
+    '<button class="btn btn-primary btn-full" data-action="submit-log">Save Log</button>' +
+    '<datalist id="qtypes-list">'+typeList+'</datalist>' +
+    '<datalist id="sources-list">'+srcList+'</datalist>' +
+    '</div></div>';
+}
+function qrowTemplate(){
+  var div=document.createElement("div");
+  div.className="qrow";
+  div.innerHTML =
+    '<input type="text" class="qtype" list="qtypes-list" placeholder="Type (e.g. MCQ)">' +
+    '<input type="text" class="qsource" list="sources-list" placeholder="Source">' +
+    '<input type="number" class="qcount" inputmode="numeric" min="0" placeholder="Count">' +
+    '<button type="button" class="qremove">✕</button>';
+  div.querySelector(".qremove").addEventListener("click", function(){ div.remove(); });
+  return div;
+}
+function refreshChapterOptions(){
+  var subj = document.getElementById("log-subject").value;
+  var phaseIdx = getCurrentPhaseIndex();
+  var sel = document.getElementById("log-chapter");
+  var chs = chaptersFor(subj, phaseIdx).filter(function(c){return c.status!=="completed";});
+  var opts = chs.map(function(c){return '<option value="'+c.id+'">'+esc(c.name)+'</option>';}).join("");
+  sel.innerHTML = opts + '<option value="__new__">＋ New chapter (from spin)</option>';
+  toggleNewChapterField();
+}
+function toggleNewChapterField(){
+  var sel=document.getElementById("log-chapter");
+  var wrap=document.getElementById("log-new-chapter-wrap");
+  wrap.style.display = sel.value==="__new__" ? "block" : "none";
+}
+function initLogModal(){
+  var qwrap=document.getElementById("qrows");
+  qwrap.appendChild(qrowTemplate());
+  document.getElementById("log-subject").addEventListener("change", refreshChapterOptions);
+  refreshChapterOptions();
+  document.getElementById("log-chapter").addEventListener("change", toggleNewChapterField);
+}
+
+/* ===================== CHAPTER MODAL (quick add) ===================== */
+function chapterModalHTML(){
+  return '<div class="overlay" data-action="close-chapter-bg">' +
+    '<div class="modal" onclick="event.stopPropagation()">' +
+    '<div class="modal-head"><h2>Add Chapter</h2><button class="modal-close" data-action="close-chapter">✕</button></div>' +
+    '<div class="field"><label>Subject</label><div style="padding:11px 12px;background:rgba(255,255,255,.05);border-radius:10px">'+esc(ui.chapterSubject)+'</div></div>' +
+    '<div class="field"><label>Chapter name</label><input type="text" id="new-chapter-name" placeholder="e.g. Chapter 5: Thermodynamics"></div>' +
+    '<button class="btn btn-primary btn-full" data-action="submit-chapter">Add Chapter</button>' +
+    '</div></div>';
+}
+
+/* ===================== ACTIONS ===================== */
+function esc(s){ return String(s).replace(/[&<>"']/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
+function toast(msg){ window.__toastMsg = msg; }
+function showToastDOM(msg){
+  var t=document.createElement("div"); t.className="toast"; t.textContent=msg;
+  document.body.appendChild(t);
+  setTimeout(function(){ t.remove(); }, 2600);
+}
+
+document.addEventListener("click", function(e){
+  var el = e.target.closest("[data-action]");
+  if(!el) return;
+  var action = el.getAttribute("data-action");
+
+  if(action==="set-tab"){ ui.tab=el.getAttribute("data-tab"); ui.phaseView=null; render(); }
+  else if(action==="goto-more"){ ui.tab="more"; render(); }
+  else if(action==="view-phase"){ ui.phaseView=parseInt(el.getAttribute("data-idx")); render(); }
+  else if(action==="view-phase-tab"){ ui.phaseView=parseInt(el.getAttribute("data-idx")); ui.tab="home"; render(); }
+  else if(action==="set-subj-pill"){ ui.subjPill=el.getAttribute("data-subj"); render(); }
+
+  else if(action==="open-log"){ ui.logOpen=true; render(); }
+  else if(action==="close-log" || action==="close-log-bg"){ ui.logOpen=false; render(); }
+
+  else if(action==="open-chapter-modal"){ ui.chapterOpen=true; ui.chapterSubject=el.getAttribute("data-subj"); render(); }
+  else if(action==="close-chapter" || action==="close-chapter-bg"){ ui.chapterOpen=false; render(); }
+
+  else if(action==="add-qrow"){ document.getElementById("qrows").appendChild(qrowTemplate()); }
+
+  else if(action==="submit-chapter"){
+    var name=document.getElementById("new-chapter-name").value.trim();
+    if(!name){ toast("Enter a chapter name"); render(); return; }
+    state.chapters.push({id:uid(), subject:ui.chapterSubject, phaseIndex:getCurrentPhaseIndex(), name:name, status:"in-progress", createdAt:todayStr()});
+    saveState(); ui.chapterOpen=false; toast("✓ Chapter added");
+    render();
+  }
+
+  else if(action==="copy-prev-chapters"){
+    var subj=el.getAttribute("data-subj"); var phaseIdx=parseInt(el.getAttribute("data-phase"));
+    var prev=chaptersFor(subj, phaseIdx-1);
+    prev.forEach(function(c){
+      state.chapters.push({id:uid(), subject:subj, phaseIndex:phaseIdx, name:c.name, status:"in-progress", createdAt:todayStr()});
+    });
+    saveState(); toast("✓ Copied "+prev.length+" chapters for revision"); render();
+  }
+
+  else if(action==="complete-chapter"){
+    var id=el.getAttribute("data-id"); var c=chapterById(id);
+    if(c){ c.status="completed"; c.completedAt=todayStr(); registerChapterCompleted(); saveState(); toast("🎉 Chapter complete — spin for the next one!"); }
+    render();
+  }
+
+  else if(action==="submit-log"){ submitLog(); }
+
+  else if(action==="save-subjects"){
+    var names=[];
+    for(var i=0;i<state.subjects.length;i++){
+      var v=document.getElementById("subj-input-"+i).value.trim();
+      names.push(v || state.subjects[i]);
+    }
+    state.subjects=names; saveState(); toast("✓ Subjects saved"); render();
+  }
+
+  else if(action==="save-setup"){
+    var sd=document.getElementById("setup-start").value;
+    var len=parseInt(document.getElementById("setup-len").value);
+    if(sd) state.setup.startDate=sd;
+    if(len && len>=7) state.setup.phaseLengthDays=len;
+    saveState(); toast("✓ Phase setup saved"); render();
+  }
+
+  else if(action==="export-data"){ exportData(); }
+
+  else if(action==="cloud-sign-in"){ if(window.cloudSignIn) window.cloudSignIn(); }
+  else if(action==="cloud-sign-out"){ if(window.cloudSignOut) window.cloudSignOut(); }
+
+  else if(action==="reset-data"){
+    if(confirm("This will permanently erase all logs, chapters and streaks on this device. Export a backup first if you want to keep it. Continue?")){
+      state=defaultState(); saveState(); toast("Data erased"); render();
+    }
+  }
+});
+
+document.addEventListener("change", function(e){
+  if(e.target && e.target.id==="import-file"){
+    var f=e.target.files[0]; if(!f) return;
+    var reader=new FileReader();
+    reader.onload=function(ev){
+      try{
+        var imported=JSON.parse(ev.target.result);
+        if(!imported || imported.version!==2) throw new Error("bad file");
+        state=imported; saveState(); toast("✓ Backup imported"); render();
+      }catch(err){ alert("Import failed — this doesn't look like a valid backup file."); }
+    };
+    reader.readAsText(f);
+  }
+});
+
+function submitLog(){
+  var subject=document.getElementById("log-subject").value;
+  var chapterSel=document.getElementById("log-chapter").value;
+  var chapterId=chapterSel;
+  if(chapterSel==="__new__"){
+    var name=document.getElementById("log-new-chapter").value.trim();
+    if(!name){ toast("Enter the new chapter's name"); return; }
+    var newC={id:uid(), subject:subject, phaseIndex:getCurrentPhaseIndex(), name:name, status:"in-progress", createdAt:todayStr()};
+    state.chapters.push(newC);
+    chapterId=newC.id;
+  }
+  var rows=document.querySelectorAll("#qrows .qrow");
+  var questions=[];
+  rows.forEach(function(r){
+    var type=r.querySelector(".qtype").value.trim();
+    var source=r.querySelector(".qsource").value.trim();
+    var count=parseInt(r.querySelector(".qcount").value)||0;
+    if(type && count>0){ questions.push({type:type, source:source, count:count}); }
+  });
+  var minutes=parseInt(document.getElementById("log-minutes").value)||0;
+  var notes=document.getElementById("log-notes").value.trim();
+  var markComplete=document.getElementById("log-complete").checked;
+  var today=todayStr();
+
+  state.logs.push({id:uid(), date:today, subject:subject, chapterId:chapterId, questions:questions, minutes:minutes, notes:notes});
+  registerLogForStreaks(today);
+  if(markComplete){
+    var c=chapterById(chapterId);
+    if(c && c.status!=="completed"){ c.status="completed"; c.completedAt=today; registerChapterCompleted(); }
+  }
+  saveState();
+  ui.logOpen=false;
+  toast("✓ Logged! Keep it up 🔥");
+  render();
+}
+
+function exportData(){
+  state.lastBackup = todayStr();
+  saveState();
+  var dataStr = JSON.stringify(state, null, 2);
+  var blob = new Blob([dataStr], {type:"application/json"});
+  var file = new File([blob], "study-tracker-backup-"+todayStr()+".json", {type:"application/json"});
+  if(navigator.share && navigator.canShare && navigator.canShare({files:[file]})){
+    navigator.share({files:[file], title:"Study Tracker Backup"}).catch(function(){ downloadBlob(blob); });
+  } else {
+    downloadBlob(blob);
+  }
+  render();
+}
+function downloadBlob(blob){
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement("a");
+  a.href=url; a.download="study-tracker-backup-"+todayStr()+".json";
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(function(){URL.revokeObjectURL(url);}, 3000);
+}
+
+/* ===================== SERVICE WORKER ===================== */
+if("serviceWorker" in navigator){
+  window.addEventListener("load", function(){
+    navigator.serviceWorker.register("./service-worker.js").catch(function(){ /* fails silently if not hosted */ });
+  });
+}
+
+/* ===================== INIT ===================== */
+render();
+</script>
+
+<script type="module">
+/* ===================== CLOUD SYNC (Firebase) =====================
+   Only does anything once FIREBASE_CONFIG above has real values.
+   See FIREBASE-SYNC-GUIDE.md for how to get them. */
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-app.js";
+import {
+  getAuth, GoogleAuthProvider, signInWithRedirect, getRedirectResult, onAuthStateChanged, signOut
+} from "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth.js";
+import {
+  getFirestore, doc, setDoc, onSnapshot, enableIndexedDbPersistence
+} from "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore.js";
+
+window.__cloudStatus = { configured:false, signedIn:false, email:null, error:null };
+
+var cfg = window.FIREBASE_CONFIG;
+var isConfigured = !!cfg && !!cfg.apiKey && cfg.apiKey.indexOf("YOUR_") !== 0;
+window.__cloudStatus.configured = isConfigured;
+
+if(isConfigured){
+  try{
+    var app = initializeApp(cfg);
+    var auth = getAuth(app);
+    var db = getFirestore(app);
+    try{ enableIndexedDbPersistence(db); }catch(e){ /* multi-tab or unsupported browser, safe to skip */ }
+
+    var unsubscribe = null;
+
+    function attachListener(uid){
+      var ref = doc(db, "users", uid, "data", "main");
+      unsubscribe = onSnapshot(ref, function(snap){
+        if(snap.exists() && snap.data().payload){
+          window.applyCloudState(snap.data().payload);
+        } else {
+          var local = window.getLocalState();
+          window.__lastPushedJSON = JSON.stringify(local);
+          setDoc(ref, { payload: local, updatedAt: Date.now() }).catch(function(err){
+            window.__cloudStatus.error = err.message; if(window.render) window.render();
+          });
+        }
+      }, function(err){
+        window.__cloudStatus.error = err.message;
+        if(window.render) window.render();
+      });
+    }
+
+    onAuthStateChanged(auth, function(user){
+      if(user){
+        window.__cloudStatus.signedIn = true;
+        window.__cloudStatus.email = user.email;
+        window.__cloudStatus.error = null;
+        attachListener(user.uid);
+      } else {
+        window.__cloudStatus.signedIn = false;
+        window.__cloudStatus.email = null;
+        if(unsubscribe){ unsubscribe(); unsubscribe=null; }
+      }
+      if(window.render) window.render();
+    });
+
+    getRedirectResult(auth).catch(function(err){
+      window.__cloudStatus.error = err.message;
+      if(window.render) window.render();
+    });
+
+    window.cloudSignIn = function(){
+      signInWithRedirect(auth, new GoogleAuthProvider());
+    };
+    window.cloudSignOut = function(){ signOut(auth); };
+    window.__pushToCloud = function(newState){
+      if(!window.__cloudStatus.signedIn || !auth.currentUser) return;
+      var ref = doc(db, "users", auth.currentUser.uid, "data", "main");
+      setDoc(ref, { payload: newState, updatedAt: Date.now() }).catch(function(err){
+        window.__cloudStatus.error = err.message; if(window.render) window.render();
+      });
+    };
+  }catch(e){
+    window.__cloudStatus.error = e.message;
+    if(window.render) window.render();
+  }
+}
+</script>
+</body>
+</html>
